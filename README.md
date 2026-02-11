@@ -1,16 +1,14 @@
-# techstore_manager
+# Projet TechStore Manager
 
-A new Flutter project.
+Application Flutter (Front-Office + mini Back-Office) : catalogue produits, détails, panier, et écran administration pour ajouter des produits.
 
-## Getting Started
+## Fonctionnalités
+- Accueil : produits à la une + catalogue (grid)
+- Détails produit
+- Panier : gestion quantités + total
+- Administration : ajout produit via formulaire
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Lancer le projet
+```bash
+flutter pub get
+flutter run
