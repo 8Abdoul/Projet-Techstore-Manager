@@ -1,11 +1,11 @@
 # Projet TechStore Manager
 
-Application Flutter (Front-Office + mini Back-Office) : catalogue produits, détails, panier, et écran administration pour ajouter des produits.
+Application Flutter : catalogue produits, détails produit, panier et mini Back-Office (administration) pour ajouter des produits.
 
 ## Fonctionnalités
-- Accueil : produits à la une + catalogue (grid)
+- Accueil : produits à la une + catalogue (GridView)
 - Détails produit
-- Panier : gestion quantités + total
+- Panier : gestion quantités (+/-), suppression, total général
 - Administration : ajout produit via formulaire
 
 ## Lancer le projet
