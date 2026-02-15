@@ -6,7 +6,6 @@ import 'screens/admin_screen.dart';
 import 'screens/cart_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/product_details_screen.dart';
-import 'data/products_data.dart';
 
 
 void main() {
@@ -51,6 +50,22 @@ class _TechStoreAppState extends State<TechStoreApp> {
 
   void removeFromCart(String productId) {
     setState(() => _cart.remove(productId));
+  }
+
+  void updateProduct(Product updated) {
+    setState(() {
+      final index = _products.indexWhere((p) => p.id == updated.id);
+      if (index != -1) {
+        _products[index] = updated;
+      }
+    });
+  }
+
+  void deleteProduct(String productId) {
+    setState(() {
+      _products.removeWhere((p) => p.id == productId);
+      _cart.remove(productId); // optionnel: enlever du panier si supprimé
+    });
   }
 
   void increaseQty(String productId) {
@@ -105,7 +120,13 @@ class _TechStoreAppState extends State<TechStoreApp> {
           onIncrease: increaseQty,
           onDecrease: decreaseQty,
         ),
-        AdminScreen.routeName: (_) => AdminScreen(onAddProduct: addProduct),
+        AdminScreen.routeName: (_) => AdminScreen(
+          products: _products,
+          onAddProduct: addProduct,
+          onUpdateProduct: updateProduct,
+          onDeleteProduct: deleteProduct,
+        ),
+
       },
 
       // Optionnel : évite un crash si route inconnue
