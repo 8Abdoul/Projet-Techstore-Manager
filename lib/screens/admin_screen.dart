@@ -22,7 +22,6 @@ class AdminScreen extends StatefulWidget {
 }
 
 class _AdminScreenState extends State<AdminScreen> {
-  // --- Form controllers (utilisés pour Add ET Edit)
   final _formKey = GlobalKey<FormState>();
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
@@ -30,7 +29,7 @@ class _AdminScreenState extends State<AdminScreen> {
   final _imageCtrl = TextEditingController();
 
   String _imagePreviewUrl = '';
-  Product? _editing; // si non null => on est en mode modification
+  Product? _editing;
 
   @override
   void initState() {
@@ -38,7 +37,6 @@ class _AdminScreenState extends State<AdminScreen> {
     _imageCtrl.addListener(() {
       final url = _imageCtrl.text.trim();
       if (url == _imagePreviewUrl) return;
-
       if (_isValidHttpUrl(url)) {
         setState(() => _imagePreviewUrl = url);
       } else {
@@ -100,7 +98,6 @@ class _AdminScreenState extends State<AdminScreen> {
     final img = _imageCtrl.text.trim();
 
     if (_editing == null) {
-      // ADD
       final newProduct = Product(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         title: title,
@@ -109,27 +106,22 @@ class _AdminScreenState extends State<AdminScreen> {
         imageUrl: img,
       );
       widget.onAddProduct(newProduct);
-
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Produit ajouté ✅')),
+        const SnackBar(content: Text('Produit ajouté ✅'), backgroundColor: Colors.green),
       );
     } else {
-      // EDIT
       final updated = Product(
-        id: _editing!.id, // on garde l'ID
+        id: _editing!.id,
         title: title,
         description: desc,
         price: price,
         imageUrl: img,
       );
-
       widget.onUpdateProduct(updated);
-
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Produit modifié ✅')),
+        const SnackBar(content: Text('Produit modifié ✅'), backgroundColor: Colors.blue),
       );
     }
-
     _resetForm();
   }
 
@@ -138,13 +130,14 @@ class _AdminScreenState extends State<AdminScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Supprimer ce produit ?'),
-        content: Text('“${p.title}” sera supprimé.'),
+        content: Text('"${p.title}" sera supprimé définitivement.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Annuler'),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Supprimer'),
           ),
@@ -163,135 +156,207 @@ class _AdminScreenState extends State<AdminScreen> {
     final isEditing = _editing != null;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Administration')),
+      appBar: AppBar(
+        title: const Text('Administration', style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // --- FORM
-            Text(
-              isEditing ? 'Modifier le produit' : 'Ajouter un produit',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-
-            Form(
-              key: _formKey,
+            // ── FORMULAIRE ──
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.07),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2)),
+              ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextFormField(
-                    controller: _titleCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Nom du produit',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Champ requis' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _descCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Description',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 3,
-                    validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Champ requis' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _priceCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Prix',
-                      hintText: 'Ex: 12.99 ou 12,99',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    validator: (v) {
-                      final val = _parsePrice(v ?? '');
-                      if (val <= 0) return 'Prix invalide';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _imageCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Image URL',
-                      hintText: 'https://...',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.url,
-                    validator: (v) {
-                      final url = (v ?? '').trim();
-                      if (url.isEmpty) return 'Champ requis';
-                      if (!_isValidHttpUrl(url)) return 'URL invalide (http/https)';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-
-                  Container(
-                    height: 160,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: _imagePreviewUrl.isEmpty
-                        ? const Center(child: Text('Aperçu image'))
-                        : Image.network(
-                      _imagePreviewUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                      const Center(child: Text('Impossible de charger l’image')),
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _submit,
-                          icon: Icon(isEditing ? Icons.save : Icons.add),
-                          label: Text(isEditing ? 'Enregistrer' : 'Ajouter'),
-                        ),
+                      Icon(
+                        isEditing ? Icons.edit : Icons.add_box,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
-                      const SizedBox(width: 10),
-                      if (isEditing)
-                        OutlinedButton(
-                          onPressed: _resetForm,
-                          child: const Text('Annuler'),
-                        ),
+                      const SizedBox(width: 8),
+                      Text(
+                        isEditing ? 'Modifier le produit' : 'Ajouter un produit',
+                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                      ),
                     ],
+                  ),
+                  const SizedBox(height: 16),
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          controller: _titleCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Nom du produit',
+                            prefixIcon: Icon(Icons.title),
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Champ requis' : null,
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _descCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Description',
+                            prefixIcon: Icon(Icons.description),
+                            border: OutlineInputBorder(),
+                          ),
+                          maxLines: 3,
+                          validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Champ requis' : null,
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _priceCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Prix',
+                            hintText: 'Ex: 12.99 ou 12,99',
+                            prefixIcon: Icon(Icons.euro),
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          validator: (v) {
+                            final val = _parsePrice(v ?? '');
+                            if (val <= 0) return 'Prix invalide';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _imageCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Image URL',
+                            hintText: 'https://...',
+                            prefixIcon: Icon(Icons.image),
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: TextInputType.url,
+                          validator: (v) {
+                            final url = (v ?? '').trim();
+                            if (url.isEmpty) return 'Champ requis';
+                            if (!_isValidHttpUrl(url)) return 'URL invalide (http/https)';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Aperçu image
+                        Container(
+                          height: 160,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.grey.shade100,
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: _imagePreviewUrl.isEmpty
+                              ? const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.image_outlined, size: 40, color: Colors.grey),
+                                SizedBox(height: 8),
+                                Text('Aperçu de l\'image', style: TextStyle(color: Colors.grey)),
+                              ],
+                            ),
+                          )
+                              : Image.network(
+                            _imagePreviewUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Center(
+                              child: Text('Impossible de charger l\'image',
+                                  style: TextStyle(color: Colors.red)),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: _submit,
+                                icon: Icon(isEditing ? Icons.save : Icons.add),
+                                label: Text(isEditing ? 'Enregistrer les modifications' : 'Ajouter au catalogue'),
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                              ),
+                            ),
+                            if (isEditing) ...[
+                              const SizedBox(width: 10),
+                              OutlinedButton(
+                                onPressed: _resetForm,
+                                child: const Text('Annuler'),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 22),
+            const SizedBox(height: 28),
 
-            // --- LIST
-            const Text(
-              'Produits',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            // ── LISTE DES PRODUITS ──
+            Row(
+              children: [
+                const Text('Catalogue produits',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text('${widget.products.length}',
+                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
+              ],
             ),
             const SizedBox(height: 10),
 
             if (widget.products.isEmpty)
-              const Text('Aucun produit pour le moment.')
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text('Aucun produit pour le moment.', style: TextStyle(color: Colors.grey)),
+                ),
+              )
             else
               ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: widget.products.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
                 itemBuilder: (ctx, i) {
                   final p = widget.products[i];
+                  final isSelected = _editing?.id == p.id;
                   return Card(
+                    elevation: isSelected ? 3 : 1,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      side: isSelected
+                          ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)
+                          : BorderSide.none,
+                    ),
                     child: ListTile(
                       leading: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
@@ -308,7 +373,7 @@ class _AdminScreenState extends State<AdminScreen> {
                           ),
                         ),
                       ),
-                      title: Text(p.title),
+                      title: Text(p.title, style: const TextStyle(fontWeight: FontWeight.w600)),
                       subtitle: Text('${p.price.toStringAsFixed(2)} €'),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -316,12 +381,13 @@ class _AdminScreenState extends State<AdminScreen> {
                           IconButton(
                             tooltip: 'Modifier',
                             onPressed: () => _startEdit(p),
-                            icon: const Icon(Icons.edit),
+                            icon: Icon(Icons.edit,
+                                color: isSelected ? Theme.of(ctx).colorScheme.primary : null),
                           ),
                           IconButton(
                             tooltip: 'Supprimer',
                             onPressed: () => _confirmDelete(p),
-                            icon: const Icon(Icons.delete_outline),
+                            icon: const Icon(Icons.delete_outline, color: Colors.red),
                           ),
                         ],
                       ),
@@ -329,6 +395,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   );
                 },
               ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
